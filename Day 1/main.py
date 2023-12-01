@@ -1,8 +1,6 @@
 with open("Day 1/input.txt") as f:
     lines = f.readlines()
 
-# Part I
-
 def getFirstAbsoluteInt(input):
     for char in input:
         if char.isdigit():
