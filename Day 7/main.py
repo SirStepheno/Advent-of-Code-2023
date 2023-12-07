@@ -1,4 +1,5 @@
 import itertools
+from functools import cmp_to_key
 
 with open("Day 7/input.txt") as f:
     lines = [line[:-1] for line in f.readlines()]
@@ -41,23 +42,8 @@ def check_order(hand1, hand2, i = 0):
     if hand1[i] == hand2[i]:
         return check_order(hand1, hand2, i + 1)
     elif cards_seq.index(hand1[i]) > cards_seq.index(hand2[i]):
-        return True
-    return False
-
-def merge_sort(x):
-    if len(x) < 2:return x
-
-    result,mid = [],int(len(x)/2)
-
-    y = merge_sort(x[:mid])
-    z = merge_sort(x[mid:])
-
-    while (len(y) > 0) and (len(z) > 0):
-            if check_order(y[0][0], z[0][0]):result.append(z.pop(0))   
-            else:result.append(y.pop(0))
-
-    result.extend(y+z)
-    return result
+        return 1
+    return -1
 
 def part_one():
     global cards_seq
@@ -68,7 +54,7 @@ def part_one():
         hand, strength = line.split(" ")
         all_hands[get_rank(hand)].append((hand, int(strength)))
 
-    sorted_all_hands = [item for rank in all_hands for item in merge_sort(rank)]
+    sorted_all_hands = [item for rank in all_hands for item in sorted(rank, key=cmp_to_key(lambda x, y:check_order(x[0], y[0])))]
     return sum([item[1] * i for i, item in enumerate(sorted_all_hands, start=1)])
 
 def part_two():
@@ -80,7 +66,7 @@ def part_two():
         hand, strength = line.split(" ")
         all_hands[get_rank(hand, joker=True)].append((hand, int(strength)))
 
-    sorted_all_hands = [item for rank in all_hands for item in merge_sort(rank)]
+    sorted_all_hands = [item for rank in all_hands for item in sorted(rank, key=cmp_to_key(lambda x, y:check_order(x[0], y[0])))]
     return sum([item[1] * i for i, item in enumerate(sorted_all_hands, start=1)])
 
 import time
