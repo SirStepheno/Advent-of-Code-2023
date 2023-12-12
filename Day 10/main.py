@@ -4,20 +4,18 @@ with open("Day 10/input.txt") as f:
 class Grid:
     def __init__(self, rows) -> None:
         self.grid = []
+        self.coord_loop = []
         self.steps = 0
         for y, row in enumerate(rows):
             res = []
             for x, item in enumerate(row):
                 if item == "S":
-                    self.current_char = Pipe("|")
+                    self.current_char = Pipe("|", x, y)
                     res.append(self.current_char)
                     self.x = x
                     self.y = y
-                    
-                elif item == ".":
-                    res.append(".")
                 else:
-                    res.append(Pipe(item))
+                    res.append(Pipe(item, x, y))
             self.grid.append(res)
         self.init_coords = (self.x, self.y)
     
@@ -39,6 +37,7 @@ class Grid:
         else:
             raise ValueError(f"Direction {direction} not valid")
         self.current_char = self.get_char(self.x, self.y)
+        self.coord_loop.append([self.x,self.y])
         self.current_char.enter(direction)
         self.steps += 1
     
@@ -47,22 +46,10 @@ class Grid:
             return True
         return False
     
-    def to_binary_grid(self):
-        new_grid = []
-        for row in self.grid:
-            new_grid.append([1 if item != "." and item.in_loop else 0 for item in row])
-        self.grid = new_grid
-    
     def to_file(self, filename):
         with open(f'Day 10/{filename}.txt', 'w') as file:
             for i, row in enumerate(self.grid):
-                file.write("".join([str(item.letter) if item != "." and item.in_loop else "!" for item in row]) + "\n")
-    
-    def to_binary_file(self, filename):
-        with open(f'Day 10/{filename}.txt', 'w') as file:
-            for i, row in enumerate(self.grid):
-                file.write("".join([str(item) for item in row]) + "\n")
-
+                file.write("".join([str(item.letter) if item.in_loop else "!" for item in row]) + "\n")
 
     def __repr__(self) -> str:
         result = " " + "".join([str(x) for x in range(len(self.grid[0]))]) + "\n"
@@ -72,7 +59,7 @@ class Grid:
         return result
 
 class Pipe:
-    def __init__(self, letter) -> None:
+    def __init__(self, letter, x, y) -> None:
         lookup = {
             "F": ["S", "E"],
             "7": ["S", "W"],
@@ -82,8 +69,12 @@ class Pipe:
             "-": ["W", "E"]
         }
         self.letter = letter
-        self.directions = lookup[letter]
+        if letter in lookup.keys():
+            self.directions = lookup[letter]
         self.in_loop = False
+        self.side = "!"
+        self.x = x
+        self.y = y
     
     def enter(self, direction):
         self.in_loop = True
@@ -102,8 +93,9 @@ class Pipe:
         return self.directions.pop(0)
     
     def __repr__(self) -> str:
-        return f"{self.letter} -> {self.directions}"
+        return self.letter
 
+lines = ["." * (len(lines[0]) + 2)] + ["." + line + "." for line in lines] + ["." * (len(lines[0]) + 2)]
 grid = Grid(lines)
 
 def part_one():
@@ -114,18 +106,23 @@ def part_one():
             break
     return grid.steps / 2
 
-
 def part_two():
     grid.to_file("output")
-    grid.to_binary_grid()
-    grid.to_binary_file("output1")
-    from skimage.morphology import flood_fill
-    import numpy as np
-    new_array = np.array(grid.grid)
-    new_array = np.pad(new_array, pad_width=1, mode='constant', constant_values=0)
-    grid.grid = flood_fill(new_array, (0, 0), 2)
-    grid.to_binary_file("output2")
-    print(sum([np.count_nonzero(row == 0) for row in grid.grid]))
+
+    # Calculate area
+    coord_loop = grid.coord_loop
+    coord_loop.append(coord_loop[0])
+    A = 0
+    for i in range(len(coord_loop) - 1):
+        A += coord_loop[i][0] * coord_loop[i + 1][1] - coord_loop[i][1] * coord_loop[i + 1][0]
+    A = abs(A / 2)
+
+    # Calculate inner points
+    b = len(coord_loop) - 1
+    i = A - (b/2) + 1
+
+    return i
+                
 
 
 import time
