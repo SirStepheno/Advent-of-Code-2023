@@ -5,13 +5,34 @@ class Instruction:
         self.value = int(value)
         self.workflow = workflow
     
+    def get_new_ranges(self, current_range: range):
+        if self.compare == ">":
+            true_range = range(self.value + 1, 4001)
+            false_range = range(1, self.value + 1)
+        elif self.compare == "<":
+            true_range = range(1, self.value)
+            false_range = range(self.value, 4001)
+        
+        # Check the overlap between the current range and the true range and false range
+        true_range = range(max(true_range.start, current_range.start), min(true_range.stop, current_range.stop))
+        false_range = range(max(false_range.start, current_range.start), min(false_range.stop, current_range.stop))
+        
+        return true_range, false_range
+
+    def get_workflow(self):
+        if self.workflow == "A":
+            return "A"
+        elif self.workflow == "R":
+            return "R"
+        return workflows[self.workflow]
+    
     def __repr__(self):
         return f"{self.letter} {self.compare} {self.value} {self.workflow}"
 
 class Workflow:
     def __init__(self, name):
         self.name = name
-        self.instructions = [] 
+        self.instructions = []
         self.default_workflow = None
     
     def parse_instruction(self, instruction):
@@ -36,6 +57,14 @@ class Workflow:
             elif instruction.compare == "<" and parts[instruction.letter] < instruction.value:
                 return instruction.workflow
         return self.default_workflow
+    
+    def get_default_workflow(self):
+        if self.default_workflow == "A":
+            return "A"
+        elif self.default_workflow == "R":
+            return "R"
+        return workflows[self.default_workflow]
+        
     
     def __repr__(self):
         return f"{self.name} {self.instructions} {self.default_workflow}"
@@ -64,13 +93,11 @@ def part_one():
             new_workflow = workflow.get_next_workflow(part)
 
             if new_workflow == "A":
-                print(part, "A")
                 for value in part.values():
                     total += value
                 break
 
             elif new_workflow == "R":
-                print(part, "R")
                 break
             
             workflow = workflows[new_workflow]
@@ -78,7 +105,47 @@ def part_one():
     return total
 
 def part_two():
-    return 0
+    workflow = workflows["in"]
+    all_workflow_ranges = [[workflow, {"x":range(1,4001), "m":range(1,4001), "a":range(1,4001), "s":range(1,4001)}]]
+    new_workflow_ranges = []
+    total = 0
+    while len(all_workflow_ranges) > 0:
+        for workflow, parts in all_workflow_ranges:
+            current_parts = parts.copy()
+            for instruction in workflow.instructions:
+                true_range, false_range = instruction.get_new_ranges(current_parts[instruction.letter])
+                # If true range
+                if len(true_range):
+                    new_parts = current_parts.copy()
+                    new_parts[instruction.letter] = true_range
+                    new_workflow_ranges.append([instruction.get_workflow(), new_parts])
+
+                # If false range
+                if len(false_range):
+                    new_parts = current_parts.copy()
+                    new_parts[instruction.letter] = false_range
+                    current_parts = new_parts
+            
+            # If default workflow
+            new_workflow_ranges.append([workflow.get_default_workflow(), current_parts])
+        
+        all_workflow_ranges = []
+
+        for workflow, parts in new_workflow_ranges:
+            if workflow == "A":
+                r = 1
+                for part in parts.values():
+                    r *= len(part)
+                total += r
+            elif workflow == "R":
+                continue
+            else:
+                all_workflow_ranges.append([workflow, parts])  
+        new_workflow_ranges = []
+    
+    return total
+        
+
 
 import time
 startTime = time.time()
